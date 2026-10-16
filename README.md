@@ -16,9 +16,9 @@ Elle permet :
 
 | Membre | Responsabilité |
 |--------|----------------|
-| Nom 1 | service-praticiens et serveur Eureka |
-| Nom 2 | service-patients et suivi documentaire |
-| Nom 3 | service-rendezvous et API Gateway |
+| Zakariae SHABI | service-praticiens et serveur Eureka |
+| Mohamed ARHAM | service-patients et suivi documentaire |
+| El mehdi OUKADA | service-rendezvous et API Gateway |
 
 ## Technologies prévues
 
