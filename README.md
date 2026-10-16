@@ -1,33 +1,23 @@
-# Med-RDV
+## Diagramme de classes
 
-## Description
+Le diagramme suivant présente les entités des trois services métier,
+leurs relations internes et les dépendances entre services.
 
-Med-RDV est une application de gestion de rendez-vous médicaux
-pour un cabinet comprenant plusieurs praticiens.
+![Diagramme de classes Med-RDV](diagramme-class.png)
 
-Elle permet :
-- de gérer les praticiens et leurs créneaux de consultation ;
-- de gérer les patients et leurs dossiers médicaux de synthèse ;
-- de demander, confirmer, réaliser ou annuler un rendez-vous ;
-- de consulter les allergies du patient avant la consultation ;
-- de mettre à jour son dossier après la consultation.
+## Architecture du projet
 
-## Équipe
+Le projet est composé de cinq applications Spring Boot :
+trois services métier, un serveur Eureka et une API Gateway.
 
-| Membre | Responsabilité |
-|--------|----------------|
-| Zakariae SHABI | service-praticiens et serveur Eureka |
-| Mohamed ARHAM | service-patients et suivi documentaire |
-| El mehdi OUKADA | service-rendezvous et API Gateway |
+![Architecture Med-RDV](architecture-app.png)
 
-## Technologies prévues
+### Applications et ports
 
-- Java et Spring Boot
-- Maven
-- Spring Data JPA
-- Bean Validation
-- Spring Cloud Netflix Eureka
-- Spring Cloud Gateway
-- OpenFeign
-- Kafka
-- Postman
+| Application | Port |
+|-------------|------|
+| API Gateway | 8080 |
+| Service Praticiens | 8081 |
+| Service Patients | 8082 |
+| Service Rendez-vous | 8083 |
+| Serveur Eureka | 8761 |
