@@ -1,3 +1,25 @@
+# Med-RDV — Gestion des rendez-vous médicaux
+
+## Description du projet
+
+Med-RDV est une application de gestion de rendez-vous médicaux
+pour un cabinet comprenant plusieurs praticiens.
+
+Elle permet de gérer les praticiens et leurs créneaux disponibles,
+les patients et leurs dossiers médicaux de synthèse, ainsi que
+le cycle de vie des rendez-vous : demande, confirmation,
+réalisation et annulation.
+
+Avant la consultation, le praticien peut consulter les allergies
+du patient. Après la consultation, le dossier médical est mis à jour.
+
+L’application repose sur trois services métier indépendants :
+- service-praticiens ;
+- service-patients ;
+- service-rendezvous.
+
+Un serveur Eureka et une API Gateway complètent cette architecture.
+
 ## Diagramme de classes
 
 Le diagramme suivant présente les entités des trois services métier,
