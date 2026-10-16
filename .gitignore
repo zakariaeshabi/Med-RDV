@@ -1,0 +1,13 @@
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Compilation Maven
+target/
+
+# Logs et fichiers locaux
+*.log
+.env
+.DS_Store
+Thumbs.db
