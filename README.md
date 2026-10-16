@@ -43,3 +43,25 @@ trois services métier, un serveur Eureka et une API Gateway.
 | Service Patients | 8082 |
 | Service Rendez-vous | 8083 |
 | Serveur Eureka | 8761 |
+
+## État d'avancement
+
+### Réalisé
+- Description du projet.
+- Diagramme de classes global.
+- Schéma d'architecture avec les noms et ports des applications.
+- Création des trois modules métier.
+- Démarrage du service praticiens sur le port 8081.
+- Vérification du service praticiens avec GET /api/ping.
+
+### En cours et prochaines étapes
+- Vérification du démarrage des services patients et rendez-vous.
+- Développement des entités et des repositories.
+- Développement des couches Service et Controller.
+- Mise en place des DTO validés et de la gestion des erreurs.
+- Tests Postman des API métier.
+
+### Livraison
+Le jalon de développement v1.0 est en cours.
+Le tag v1.0 sera créé après validation des fonctionnalités
+et des tests demandés.
