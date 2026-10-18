@@ -1,13 +1,21 @@
-# IntelliJ
+# IntelliJ IDEA
 .idea/
+**/.idea/
 *.iml
 out/
+**/out/
 
 # Compilation Maven
 target/
+**/target/
 
-# Logs et fichiers locaux
+# Logs
 *.log
+
+# Variables d'environnement locales
 .env
+**/.env
+
+# Fichiers du systeme
 .DS_Store
 Thumbs.db
