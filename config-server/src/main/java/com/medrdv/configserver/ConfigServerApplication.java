@@ -1,4 +1,4 @@
-package com.medrdv.configserver.com.medrdv.configserver;
+package com.medrdv.configserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

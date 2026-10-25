@@ -22,6 +22,7 @@
 
     <properties>
         <java.version>17</java.version>
+        <maven.compiler.release>17</maven.compiler.release>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
     </properties>
 
@@ -36,6 +37,20 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+        </dependency>
+    </dependencies>
 
     <modules>
         <module>service-praticiens</module>
@@ -43,6 +58,7 @@
         <module>service-rendezvous</module>
         <module>eureka-server</module>
         <module>api-gateway</module>
+        <module>config-server</module>
     </modules>
 
 </project>
