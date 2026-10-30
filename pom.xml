@@ -37,6 +37,16 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -57,6 +67,7 @@
         <module>eureka-server</module>
         <module>api-gateway</module>
         <module>config-server</module>
+        <module>service-notifications</module>
     </modules>
 
 </project>
