@@ -169,3 +169,175 @@ e-commerce du TP.
 ## Jalon 5
 
 [Guide et architecture des notifications](docs/jalon5.md).
+
+<!-- BEGIN MEDRDV JALON5 -->
+## Version v5.0 - Notifications asynchrones
+
+### Objectif
+
+Apres la validation en base d'un rendez-vous, le service rendez-vous
+publie une demande de notification dans RabbitMQ.
+Le service notifications consomme le message et envoie une confirmation
+a l'adresse email du patient via Mailpit.
+
+Le parcours metier n'appelle pas le controleur HTTP de notifications :
+POST /notifications/email est reserve aux tests locaux.
+
+### Architecture
+
+```mermaid
+flowchart LR
+    U[Client / Postman] --> G[Gateway : 8080]
+    G --> R[service-rendezvous : 8083]
+    R --> DB[(Base rendez-vous)]
+    R -->|OpenFeign| P[service-patients : 8082]
+    R -->|OpenFeign| PR[service-praticiens : 8081]
+    R -->|Apres commit / JSON / AMQP 5672| Q[RabbitMQ : notifications.email]
+    Q --> N[service-notifications : 8084]
+    N -->|SMTP 1025| M[Mailpit]
+    M --> W[Interface web : 8025]
+```
+
+### Technologies
+
+- Java 17 et Spring Boot 3.5.6.
+- Spring Cloud Config et Eureka.
+- OpenFeign pour les appels synchrones.
+- Spring AMQP et RabbitMQ pour les notifications asynchrones.
+- Jakarta Validation et JavaMailSender.
+- Mailpit pour consulter les emails de test.
+
+### Ports
+
+| Composant | Port |
+|---|---:|
+| Gateway | 8080 |
+| Praticiens | 8081 |
+| Patients | 8082 |
+| Rendez-vous | 8083 |
+| Notifications HTTP interne | 8084 |
+| Eureka | 8761 |
+| Config Server | 8888 |
+| RabbitMQ AMQP | 5672 |
+| Administration RabbitMQ | 15672 |
+| Mailpit SMTP | 1025 |
+| Mailpit web | 8025 |
+
+### Configuration
+
+La configuration SMTP et RabbitMQ est centralisee dans config-repo :
+
+- service-notifications.properties
+- service-rendezvous.properties
+
+Les applications Java sont lancees sur Windows.
+Les adresses 127.0.0.1 correspondent a cet environnement local.
+
+Pour lire la configuration du tag v5.0, ajouter au lancement :
+
+```text
+--spring.cloud.config.label=v5.0
+```
+
+Utiliser uniquement des identifiants de demonstration dans le depot.
+Ne jamais versionner de secrets de production.
+
+### Demarrage
+
+Pour les conteneurs deja crees :
+
+```powershell
+docker start rabbitmq
+docker start mailpit
+```
+
+Ordre de lancement des applications :
+
+1. Eureka et Config Server.
+2. Services patients et praticiens.
+3. Service rendez-vous.
+4. Service notifications.
+5. Gateway.
+
+Laisser les terminaux ouverts et verifier les services metier dans Eureka.
+
+### Creation d'un rendez-vous
+
+Endpoint direct :
+
+```http
+POST http://localhost:8083/api/rendezvous
+Content-Type: application/json
+idempotencyKey: une-nouvelle-valeur-UUID
+```
+
+Corps :
+
+```json
+{
+  "patientId": 1,
+  "praticienId": 1,
+  "dateHeure": "2026-12-15T14:30:00"
+}
+```
+
+Adapter les identifiants a des personnes actives existantes et choisir
+un creneau futur libre commencant a :00 ou :30.
+Pour le parcours via Gateway, utiliser la route configuree dans le projet.
+
+Resultat attendu : 201 Created, rendez-vous enregistre et email correspondant.
+
+### Verification des notifications
+
+- Envoi HTTP direct valide : 204 et email dans Mailpit.
+- Adresse email invalide : 400.
+- Mailpit arrete pendant un envoi HTTP direct : 503.
+- Creation d'un rendez-vous : notification automatique par RabbitMQ.
+- Notifications arrete : les demandes restent en attente.
+- Redemarrage de notifications : traitement des messages et reception des emails.
+
+Pour le test de traitement differe, creer deux rendez-vous pendant
+l'arret de notifications, verifier une augmentation de Ready de deux,
+puis redemarrer le consommateur et verifier les deux emails.
+Ready et Unacked doivent revenir a zero apres traitement.
+
+Commande de controle :
+
+```powershell
+docker exec rabbitmq rabbitmqctl list_queues name messages_ready messages_unacknowledged consumers
+```
+
+Les tests ont ete declares reussis pendant la verification locale.
+Conserver les reponses Postman et captures correspondantes pour le rendu.
+
+### Collection Postman
+
+Importer le fichier :
+
+```text
+postman/jalon5.postman_collection.json
+```
+
+Renseigner les variables de collection avant execution :
+patientId, praticienId, dateHeure et gatewayRdvUrl.
+
+Le test 503 necessite l'arret manuel de Mailpit, puis son redemarrage.
+Ne pas executer toute la collection sans respecter ces preconditions.
+
+### Limites
+
+- Publication uniquement apres commit de la transaction.
+- Un echec de publication est journalise sans annuler le rendez-vous.
+- Pas d'outbox ni de confirmations de publication dans cette version.
+- Trois tentatives de traitement configurees.
+- Pas de DLQ : un echec definitif peut supprimer le message.
+- Les donnees H2 en memoire peuvent disparaitre au redemarrage.
+
+### Livrables
+
+- Code du producteur et du consommateur.
+- Configuration centralisee.
+- Schema d'architecture.
+- Collection Postman et preuves des tests.
+- Guide complementaire : [docs/jalon5.md](docs/jalon5.md).
+<!-- END MEDRDV JALON5 -->
