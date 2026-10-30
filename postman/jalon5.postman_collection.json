@@ -1,0 +1,175 @@
+{
+    "variable":  [
+                     {
+                         "key":  "notifications",
+                         "value":  "http://localhost:8084"
+                     },
+                     {
+                         "key":  "gatewayRdvUrl",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "patientId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "praticienId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "dateHeure",
+                         "value":  ""
+                     }
+                 ],
+    "info":  {
+                 "description":  "Executer manuellement : le test 503 exige Mailpit arrete. Renseigner les variables avant le test Gateway. Sauvegarder les reponses observees.",
+                 "name":  "Med-RDV - Jalon 5",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\r\n    \"contenu\":  \"Verification SMTP.\",\r\n    \"objet\":  \"Med-RDV - Test Postman\",\r\n    \"destinataire\":  \"postman@example.com\"\r\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{notifications}}/notifications/email",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "SMTP valide - attendu 204",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Statut HTTP attendu\u0027, function () {",
+                                                                   "  pm.response.to.have.status(204);",
+                                                                   "});"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\r\n    \"contenu\":  \"Ne doit pas etre envoye.\",\r\n    \"objet\":  \"Test validation\",\r\n    \"destinataire\":  \"invalide\"\r\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{notifications}}/notifications/email",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "Adresse invalide - attendu 400",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Statut HTTP attendu\u0027, function () {",
+                                                                   "  pm.response.to.have.status(400);",
+                                                                   "});"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\r\n    \"contenu\":  \"Arreter Mailpit avant, puis le redemarrer apres.\",\r\n    \"objet\":  \"Test panne SMTP\",\r\n    \"destinataire\":  \"postman@example.com\"\r\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{notifications}}/notifications/email",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "Mailpit ARRETE manuellement - attendu 503",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Statut HTTP attendu\u0027, function () {",
+                                                                   "  pm.response.to.have.status(503);",
+                                                                   "});"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\n  \"patientId\": {{patientId}},\n  \"praticienId\": {{praticienId}},\n  \"dateHeure\": \"{{dateHeure}}\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{gatewayRdvUrl}}",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "idempotencyKey",
+                                                        "value":  "{{$guid}}"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "Creation RDV via Gateway - attendu 201",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Rendez-vous cree\u0027, function () {",
+                                                                   "  pm.response.to.have.status(201);",
+                                                                   "});"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 }
+             ]
+}

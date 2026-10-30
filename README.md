@@ -166,3 +166,6 @@ Les corrections ultérieures sont conservées dans l’historique Git.
 
 Le dépôt à remettre est Med-RDV, et non le dépôt d’entraînement
 e-commerce du TP.
+## Jalon 5
+
+[Guide et architecture des notifications](docs/jalon5.md).
