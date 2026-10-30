@@ -1,5 +1,13 @@
 package com.medrdv.rendezvous.service;
 
+import com.medrdv.rendezvous.dto.NotificationEmailDto;
+import com.medrdv.rendezvous.messaging.NotificationPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpException;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import com.medrdv.rendezvous.dto.CreateRendezvousRequest;
 import com.medrdv.rendezvous.dto.RendezvousDetailDto;
 import com.medrdv.rendezvous.dto.RendezvousDto;
@@ -23,14 +31,21 @@ public class RendezvousService {
     private final PatientsClient patientsClient;
     private final PraticiensClient praticiensClient;
 
+    private static final Logger log =
+            LoggerFactory.getLogger(RendezvousService.class);
+
+    private final NotificationPublisher notificationPublisher;
+
     public RendezvousService(
             RendezvousRepository repository,
             PatientsClient patientsClient,
-            PraticiensClient praticiensClient) {
+            PraticiensClient praticiensClient,
+            NotificationPublisher notificationPublisher) {
 
         this.repository = repository;
         this.patientsClient = patientsClient;
         this.praticiensClient = praticiensClient;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Transactional
@@ -104,7 +119,22 @@ public class RendezvousService {
                 idempotencyKey
         );
 
-        return toDto(repository.saveAndFlush(rendezvous));
+        // JALON5_NOTIFICATION_AFTER_COMMIT
+        Rendezvous saved = repository.saveAndFlush(rendezvous);
+
+        NotificationEmailDto notification = new NotificationEmailDto(
+                patient.email(),
+                "Med-RDV - Rendez-vous n° " + saved.getId() + " confirme",
+                "Bonjour " + patient.prenom() + " " + patient.nom()
+                        + ", votre rendez-vous n° " + saved.getId()
+                        + " avec " + praticien.prenom() + " "
+                        + praticien.nom()
+                        + " est confirme pour le "
+                        + saved.getDateHeure() + "."
+        );
+
+        publierApresCommit(notification);
+        return toDto(saved);
     }
 
     @Transactional(readOnly = true)
@@ -126,6 +156,26 @@ public class RendezvousService {
                 toDto(rendezvous),
                 patient,
                 praticien
+        );
+    }
+
+    private void publierApresCommit(NotificationEmailDto notification) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            notificationPublisher.envoyer(notification);
+                            log.info("Demande de notification publiee");
+                        } catch (AmqpException ex) {
+                            log.error(
+                                    "Rendez-vous enregistre, mais publication "
+                                            + "de la notification en echec",
+                                    ex
+                            );
+                        }
+                    }
+                }
         );
     }
 
