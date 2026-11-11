@@ -39,4 +39,18 @@ public class GlobalExceptionHandler {
                 .body("Conflit d'enregistrement : verifier la cle "
                         + "d'idempotence et les creneaux");
     }
+    @ExceptionHandler(ServiceExterneIndisponibleException.class)
+    public ResponseEntity<String> indisponible(
+            ServiceExterneIndisponibleException ex) {
+        return ResponseEntity.status(503).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(
+            io.github.resilience4j.bulkhead.BulkheadFullException.class)
+    public ResponseEntity<String> saturation(
+            io.github.resilience4j.bulkhead.BulkheadFullException ex) {
+        return ResponseEntity.status(503)
+                .body("Trop d'appels simultanes vers le service distant");
+    }
+
 }

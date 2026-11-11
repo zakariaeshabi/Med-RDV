@@ -13,9 +13,8 @@ import com.medrdv.rendezvous.dto.RendezvousDetailDto;
 import com.medrdv.rendezvous.dto.RendezvousDto;
 import com.medrdv.rendezvous.entity.Rendezvous;
 import com.medrdv.rendezvous.feign.PatientDto;
-import com.medrdv.rendezvous.feign.PatientsClient;
+import com.medrdv.rendezvous.feign.ResilientRequests;
 import com.medrdv.rendezvous.feign.PraticienDto;
-import com.medrdv.rendezvous.feign.PraticiensClient;
 import com.medrdv.rendezvous.repository.RendezvousRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,8 +27,7 @@ import java.time.LocalDateTime;
 public class RendezvousService {
 
     private final RendezvousRepository repository;
-    private final PatientsClient patientsClient;
-    private final PraticiensClient praticiensClient;
+    private final ResilientRequests resilientRequests;
 
     private static final Logger log =
             LoggerFactory.getLogger(RendezvousService.class);
@@ -38,13 +36,11 @@ public class RendezvousService {
 
     public RendezvousService(
             RendezvousRepository repository,
-            PatientsClient patientsClient,
-            PraticiensClient praticiensClient,
+            ResilientRequests resilientRequests,
             NotificationPublisher notificationPublisher) {
 
         this.repository = repository;
-        this.patientsClient = patientsClient;
-        this.praticiensClient = praticiensClient;
+        this.resilientRequests = resilientRequests;
         this.notificationPublisher = notificationPublisher;
     }
 
@@ -83,14 +79,14 @@ public class RendezvousService {
             );
         }
 
-        PatientDto patient = patientsClient.obtenir(request.patientId());
+        PatientDto patient = resilientRequests.patientStrict(request.patientId());
 
         if (!patient.actif()) {
             throw new IllegalArgumentException("Patient inactif");
         }
 
         PraticienDto praticien =
-                praticiensClient.obtenir(request.praticienId());
+                resilientRequests.praticienStrict(request.praticienId());
 
         if (!praticien.actif()) {
             throw new IllegalArgumentException("Praticien inactif");
@@ -142,15 +138,18 @@ public class RendezvousService {
         return toDto(charger(id));
     }
 
+    @io.github.resilience4j.ratelimiter.annotation.RateLimiter(
+            name = "consultation",
+            fallbackMethod = "consultationLimitee")
     @Transactional(readOnly = true)
     public RendezvousDetailDto obtenirDetail(Long id) {
         Rendezvous rendezvous = charger(id);
 
         PatientDto patient =
-                patientsClient.obtenir(rendezvous.getPatientId());
+                resilientRequests.patientLecture(rendezvous.getPatientId());
 
         PraticienDto praticien =
-                praticiensClient.obtenir(rendezvous.getPraticienId());
+                resilientRequests.praticienLecture(rendezvous.getPraticienId());
 
         return new RendezvousDetailDto(
                 toDto(rendezvous),
@@ -196,4 +195,11 @@ public class RendezvousService {
                 rendezvous.getStatut()
         );
     }
+    public RendezvousDetailDto consultationLimitee(
+            Long id,
+            io.github.resilience4j.ratelimiter.RequestNotPermitted cause) {
+        log.warn("Quota consultation atteint : donnees locales seules");
+        return new RendezvousDetailDto(toDto(charger(id)), null, null);
+    }
+
 }
