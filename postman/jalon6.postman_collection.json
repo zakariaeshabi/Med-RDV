@@ -1,0 +1,368 @@
+{
+    "variable":  [
+                     {
+                         "key":  "patients",
+                         "value":  "http://localhost:8082"
+                     },
+                     {
+                         "key":  "praticiens",
+                         "value":  "http://localhost:8081"
+                     },
+                     {
+                         "key":  "rendezvous",
+                         "value":  "http://localhost:8083"
+                     },
+                     {
+                         "key":  "patientId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "praticienId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "rdvId",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "cleV6",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "dateHeure",
+                         "value":  ""
+                     }
+                 ],
+    "info":  {
+                 "description":  "Executer 01 a 05 dans l\u0027ordre. Les dossiers MANUEL necessitent un arret de service et ne doivent pas etre executes par un lancement global.",
+                 "name":  "Med-RDV - Jalon 6",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "item":  [
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\"nom\":\"TestV6\",\"prenom\":\"Amine\",\"email\":\"postman.v6@example.com\",\"actif\":true}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{patients}}/api/patients",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "01 - Creer patient actif",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\"Patient cree : 201\", () =\u003e pm.response.to.have.status(201));\nif (pm.response.code === 201) {\n  pm.collectionVariables.set(\"patientId\", pm.response.json().id);\n}"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\"nom\":\"TestV6\",\"prenom\":\"Sara\",\"specialite\":\"Cardiologie\",\"actif\":true}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{praticiens}}/api/praticiens",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "02 - Creer praticien actif",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\"Praticien cree : 201\", () =\u003e pm.response.to.have.status(201));\nif (pm.response.code === 201) {\n  pm.collectionVariables.set(\"praticienId\", pm.response.json().id);\n}"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\"patientId\":{{patientId}},\"praticienId\":{{praticienId}},\"dateHeure\":\"{{dateHeure}}\"}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{rendezvous}}/api/rendezvous",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "idempotencyKey",
+                                                        "value":  "{{cleV6}}"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "03 - Creer rendez-vous",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\"Rendez-vous cree : 201\", () =\u003e pm.response.to.have.status(201));\nif (pm.response.code === 201) {\n  pm.collectionVariables.set(\"rdvId\", pm.response.json().id);\n}"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   },
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.collectionVariables.set(\"cleV6\", pm.variables.replaceIn(\"{{$guid}}\"));\nconst d = new Date();\nd.setDate(d.getDate() + 30);\nd.setHours(14, 30, 0, 0);\nconst pad = n =\u003e String(n).padStart(2, \"0\");\nconst date = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T14:30:00`;\npm.collectionVariables.set(\"dateHeure\", date);"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "prerequest"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  "{{rendezvous}}/api/rendezvous/{{rdvId}}/detail",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "04 - Consultation enrichie",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\"Consultation : 200\", () =\u003e pm.response.to.have.status(200));\npm.test(\"Patient et praticien disponibles\", () =\u003e {\n  const d = pm.response.json();\n  pm.expect(d.patient).to.not.equal(null);\n  pm.expect(d.praticien).to.not.equal(null);\n});"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "request":  {
+                                     "body":  {
+                                                  "raw":  "{\"patientId\":{{patientId}},\"praticienId\":{{praticienId}},\"dateHeure\":\"{{dateHeure}}\"}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              },
+                                                  "mode":  "raw"
+                                              },
+                                     "method":  "POST",
+                                     "url":  "{{rendezvous}}/api/rendezvous",
+                                     "header":  [
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    },
+                                                    {
+                                                        "key":  "idempotencyKey",
+                                                        "value":  "{{cleV6}}"
+                                                    }
+                                                ]
+                                 },
+                     "name":  "05 - Rejeu exact meme cle",
+                     "event":  [
+                                   {
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.test(\"Rejeu refuse : 400\", () =\u003e pm.response.to.have.status(400));\npm.test(\"Operation deja traitee\", () =\u003e {\n  pm.expect(pm.response.text()).to.include(\"Operation deja traitee\");\n});"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  },
+                                       "listen":  "test"
+                                   }
+                               ]
+                 },
+                 {
+                     "description":  "Arreter uniquement le service indique. Restaurer ses donnees au redemarrage. Eviter une rafale de GET pour ne pas confondre RateLimiter et repli Feign.",
+                     "name":  "MANUEL - Panne patients - ne pas lancer avec les autres tests",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{rendezvous}}/api/rendezvous/{{rdvId}}/detail",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "Consultation pendant panne",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Consultation : 200\", () =\u003e pm.response.to.have.status(200));\npm.test(\"Reference indisponible a null\", () =\u003e {\n  pm.expect(pm.response.json().patient).to.equal(null);\n});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"patientId\":{{patientId}},\"praticienId\":{{praticienId}},\"dateHeure\":\"{{dateHeure}}\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{rendezvous}}/api/rendezvous",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "idempotencyKey",
+                                                                         "value":  "{{cleV6}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "Creation pendant panne",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Creation refusee : 503\", () =\u003e pm.response.to.have.status(503));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    },
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.collectionVariables.set(\"cleV6\", pm.variables.replaceIn(\"{{$guid}}\"));\nconst d = new Date();\nd.setDate(d.getDate() + 30);\nd.setHours(14, 30, 0, 0);\nconst pad = n =\u003e String(n).padStart(2, \"0\");\nconst date = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T14:30:00`;\npm.collectionVariables.set(\"dateHeure\", date);"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "prerequest"
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "description":  "Arreter uniquement le service indique. Restaurer ses donnees au redemarrage. Eviter une rafale de GET pour ne pas confondre RateLimiter et repli Feign.",
+                     "name":  "MANUEL - Panne praticiens - ne pas lancer avec les autres tests",
+                     "item":  [
+                                  {
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{rendezvous}}/api/rendezvous/{{rdvId}}/detail",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "Consultation pendant panne",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Consultation : 200\", () =\u003e pm.response.to.have.status(200));\npm.test(\"Reference indisponible a null\", () =\u003e {\n  pm.expect(pm.response.json().praticien).to.equal(null);\n});"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "request":  {
+                                                      "body":  {
+                                                                   "raw":  "{\"patientId\":{{patientId}},\"praticienId\":{{praticienId}},\"dateHeure\":\"{{dateHeure}}\"}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               },
+                                                                   "mode":  "raw"
+                                                               },
+                                                      "method":  "POST",
+                                                      "url":  "{{rendezvous}}/api/rendezvous",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "idempotencyKey",
+                                                                         "value":  "{{cleV6}}"
+                                                                     }
+                                                                 ]
+                                                  },
+                                      "name":  "Creation pendant panne",
+                                      "event":  [
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.test(\"Creation refusee : 503\", () =\u003e pm.response.to.have.status(503));"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "test"
+                                                    },
+                                                    {
+                                                        "script":  {
+                                                                       "exec":  [
+                                                                                    "pm.collectionVariables.set(\"cleV6\", pm.variables.replaceIn(\"{{$guid}}\"));\nconst d = new Date();\nd.setDate(d.getDate() + 30);\nd.setHours(14, 30, 0, 0);\nconst pad = n =\u003e String(n).padStart(2, \"0\");\nconst date = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T14:30:00`;\npm.collectionVariables.set(\"dateHeure\", date);"
+                                                                                ],
+                                                                       "type":  "text/javascript"
+                                                                   },
+                                                        "listen":  "prerequest"
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ]
+}

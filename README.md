@@ -341,3 +341,26 @@ Ne pas executer toute la collection sans respecter ces preconditions.
 - Collection Postman et preuves des tests.
 - Guide complementaire : [docs/jalon5.md](docs/jalon5.md).
 <!-- END MEDRDV JALON5 -->
+
+<!-- BEGIN MEDRDV JALON6 -->
+## Jalon 6 - Resilience, erreurs et idempotence
+
+- Deux clients Feign proteges : patients et praticiens.
+- Timeouts, Retry, Circuit Breaker et Bulkhead.
+- Creation stricte : HTTP 503 si verification distante indisponible.
+- Consultation degradee sans cache.
+- RateLimiter dans le service rendez-vous : donnees locales seules
+  quand le quota d'enrichissement est epuise.
+- Gestion centralisee des erreurs et refus des cles deja utilisees.
+
+Le RateLimiter n'est pas place sur la Gateway.
+
+Guide, resultats et limites :
+[docs/jalon6.md](docs/jalon6.md).
+
+Collection :
+[postman/jalon6.postman_collection.json](postman/jalon6.postman_collection.json).
+
+Les preuves Retry/Circuit Breaker, le test de saturation Bulkhead
+et le chargement final depuis Git sont a documenter selon le guide.
+<!-- END MEDRDV JALON6 -->
