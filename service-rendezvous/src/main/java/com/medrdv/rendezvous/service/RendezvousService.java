@@ -1,24 +1,23 @@
 package com.medrdv.rendezvous.service;
 
-import com.medrdv.rendezvous.dto.NotificationEmailDto;
-import com.medrdv.rendezvous.messaging.NotificationPublisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.amqp.AmqpException;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
 import com.medrdv.rendezvous.dto.CreateRendezvousRequest;
 import com.medrdv.rendezvous.dto.RendezvousDetailDto;
 import com.medrdv.rendezvous.dto.RendezvousDto;
 import com.medrdv.rendezvous.entity.Rendezvous;
 import com.medrdv.rendezvous.feign.PatientDto;
-import com.medrdv.rendezvous.feign.ResilientRequests;
 import com.medrdv.rendezvous.feign.PraticienDto;
+import com.medrdv.rendezvous.feign.ResilientRequests;
+import com.medrdv.rendezvous.messaging.NotificationPublisher;
 import com.medrdv.rendezvous.repository.RendezvousRepository;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -26,12 +25,11 @@ import java.time.LocalDateTime;
 @Service
 public class RendezvousService {
 
-    private final RendezvousRepository repository;
-    private final ResilientRequests resilientRequests;
-
     private static final Logger log =
             LoggerFactory.getLogger(RendezvousService.class);
 
+    private final RendezvousRepository repository;
+    private final ResilientRequests resilientRequests;
     private final NotificationPublisher notificationPublisher;
 
     public RendezvousService(
@@ -79,7 +77,8 @@ public class RendezvousService {
             );
         }
 
-        PatientDto patient = resilientRequests.patientStrict(request.patientId());
+        PatientDto patient =
+                resilientRequests.patientStrict(request.patientId());
 
         if (!patient.actif()) {
             throw new IllegalArgumentException("Patient inactif");
@@ -115,21 +114,32 @@ public class RendezvousService {
                 idempotencyKey
         );
 
-        // JALON5_NOTIFICATION_AFTER_COMMIT
         Rendezvous saved = repository.saveAndFlush(rendezvous);
 
-        NotificationEmailDto notification = new NotificationEmailDto(
-                patient.email(),
-                "Med-RDV - Rendez-vous n° " + saved.getId() + " confirme",
+        final Long rendezvousId = saved.getId();
+        final String email = patient.email();
+
+        final String sujet =
+                "Med-RDV - Rendez-vous n° "
+                        + rendezvousId
+                        + " confirme";
+
+        final String contenu =
                 "Bonjour " + patient.prenom() + " " + patient.nom()
-                        + ", votre rendez-vous n° " + saved.getId()
+                        + ", votre rendez-vous n° " + rendezvousId
                         + " avec " + praticien.prenom() + " "
                         + praticien.nom()
                         + " est confirme pour le "
-                        + saved.getDateHeure() + "."
+                        + saved.getDateHeure() + ".";
+
+        publierApresCommit(
+                rendezvousId,
+                idempotencyKey,
+                email,
+                sujet,
+                contenu
         );
 
-        publierApresCommit(notification);
         return toDto(saved);
     }
 
@@ -138,18 +148,23 @@ public class RendezvousService {
         return toDto(charger(id));
     }
 
-    @io.github.resilience4j.ratelimiter.annotation.RateLimiter(
+    @RateLimiter(
             name = "consultation",
-            fallbackMethod = "consultationLimitee")
+            fallbackMethod = "consultationLimitee"
+    )
     @Transactional(readOnly = true)
     public RendezvousDetailDto obtenirDetail(Long id) {
         Rendezvous rendezvous = charger(id);
 
         PatientDto patient =
-                resilientRequests.patientLecture(rendezvous.getPatientId());
+                resilientRequests.patientLecture(
+                        rendezvous.getPatientId()
+                );
 
         PraticienDto praticien =
-                resilientRequests.praticienLecture(rendezvous.getPraticienId());
+                resilientRequests.praticienLecture(
+                        rendezvous.getPraticienId()
+                );
 
         return new RendezvousDetailDto(
                 toDto(rendezvous),
@@ -158,21 +173,24 @@ public class RendezvousService {
         );
     }
 
-    private void publierApresCommit(NotificationEmailDto notification) {
+    private void publierApresCommit(
+            Long rendezvousId,
+            String correlationId,
+            String email,
+            String sujet,
+            String contenu) {
+
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        try {
-                            notificationPublisher.envoyer(notification);
-                            log.info("Demande de notification publiee");
-                        } catch (AmqpException ex) {
-                            log.error(
-                                    "Rendez-vous enregistre, mais publication "
-                                            + "de la notification en echec",
-                                    ex
-                            );
-                        }
+                        notificationPublisher.envoyer(
+                                rendezvousId,
+                                correlationId,
+                                email,
+                                sujet,
+                                contenu
+                        );
                     }
                 }
         );
@@ -195,11 +213,19 @@ public class RendezvousService {
                 rendezvous.getStatut()
         );
     }
+
     public RendezvousDetailDto consultationLimitee(
             Long id,
-            io.github.resilience4j.ratelimiter.RequestNotPermitted cause) {
-        log.warn("Quota consultation atteint : donnees locales seules");
-        return new RendezvousDetailDto(toDto(charger(id)), null, null);
-    }
+            RequestNotPermitted cause) {
 
+        log.warn(
+                "Quota consultation atteint : donnees locales seules"
+        );
+
+        return new RendezvousDetailDto(
+                toDto(charger(id)),
+                null,
+                null
+        );
+    }
 }
